@@ -1,12 +1,50 @@
 package com.github.nacabaro.vbhelper.source
 
 import com.github.cfogrady.vbnfc.data.NfcCharacter
+import com.github.cfogrady.vitalwear.protos.Character
 import com.github.nacabaro.vbhelper.domain.device_data.BECharacterData
+import com.github.nacabaro.vbhelper.domain.device_data.VitalWearCharacterSettings
 import com.github.nacabaro.vbhelper.utils.DeviceType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class VitalWearCharacterExporterTest {
+    @Test
+    fun buildVitalWearSettingsProto_defaultsWhenNoStoredSettings() {
+        val proto = buildVitalWearSettingsProto(null)
+
+        assertEquals(false, proto.trainingInBackground)
+        assertEquals(Character.Settings.AllowedBattles.CARD_ONLY, proto.allowedBattles)
+        assertEquals(false, proto.hasAssumedFranchise())
+    }
+
+    @Test
+    fun buildVitalWearSettingsProto_restoresStoredWatchSettings() {
+        val proto = buildVitalWearSettingsProto(
+            VitalWearCharacterSettings(
+                characterId = 7L,
+                trainingInBackground = true,
+                allowedBattles = Character.Settings.AllowedBattles.ALL.number,
+                accumulatedDailyInjuries = 2,
+                assumedFranchise = 1,
+            )
+        )
+
+        assertEquals(true, proto.trainingInBackground)
+        assertEquals(Character.Settings.AllowedBattles.ALL, proto.allowedBattles)
+        assertEquals(true, proto.hasAssumedFranchise())
+        assertEquals(1, proto.assumedFranchise)
+    }
+
+    @Test
+    fun buildVitalWearSettingsProto_fallsBackToCardOnlyForUnknownAllowedBattles() {
+        val proto = buildVitalWearSettingsProto(
+            VitalWearCharacterSettings(characterId = 7L, allowedBattles = 99)
+        )
+
+        assertEquals(Character.Settings.AllowedBattles.CARD_ONLY, proto.allowedBattles)
+    }
+
     @Test
     fun resolveTrainingSeconds_preservesBeTrainingMinutesAsSeconds() {
         val beData = testBeData(remainingTrainingTimeInMinutes = 37)

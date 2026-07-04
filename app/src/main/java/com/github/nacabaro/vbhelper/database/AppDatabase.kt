@@ -40,7 +40,7 @@ import com.github.nacabaro.vbhelper.domain.device_data.CharacterTransferPolicy
 import com.github.nacabaro.vbhelper.domain.items.Items
 
 @Database(
-    version = 3,
+    version = 4,
     exportSchema = false,
     entities = [
         Card::class,
@@ -105,6 +105,37 @@ abstract class AppDatabase : RoomDatabase() {
                 try {
                     db.execSQL("ALTER TABLE `Card` ADD COLUMN `isBEm` INTEGER NOT NULL DEFAULT 0")
                 } catch (e: Exception) {}
+            }
+        }
+
+        // Version 3 added indices to several entities, but the version bump left v2
+        // installs without an upgrade path. Room validates indices after migrating,
+        // so they must be created here with Room's index naming convention.
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_UserCharacter_charId` ON `UserCharacter` (`charId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_CardCharacter_cardId` ON `CardCharacter` (`cardId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_CardCharacter_spriteId` ON `CardCharacter` (`spriteId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_CardAdventure_characterId` ON `CardAdventure` (`characterId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_CardAdventure_cardId` ON `CardAdventure` (`cardId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_CardFusions_fromCharaId` ON `CardFusions` (`fromCharaId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_CardFusions_toCharaId` ON `CardFusions` (`toCharaId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_PossibleTransformations_charaId` ON `PossibleTransformations` (`charaId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_PossibleTransformations_toCharaId` ON `PossibleTransformations` (`toCharaId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Background_cardId` ON `Background` (`cardId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_VitalsHistory_charId` ON `VitalsHistory` (`charId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_SpecialMissions_characterId` ON `SpecialMissions` (`characterId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_TransformationHistory_monId` ON `TransformationHistory` (`monId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_TransformationHistory_stageId` ON `TransformationHistory` (`stageId`)")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // VitalWear round-trip data the watch sends but VBHelper has no other home for.
+                db.execSQL("ALTER TABLE `VitalWearCharacterSettings` ADD COLUMN `assumedFranchise` INTEGER")
+                db.execSQL("ALTER TABLE `VitalWearCharacterSettings` ADD COLUMN `generation` INTEGER")
+                db.execSQL("ALTER TABLE `VitalWearCharacterSettings` ADD COLUMN `totalTrophies` INTEGER")
             }
         }
     }

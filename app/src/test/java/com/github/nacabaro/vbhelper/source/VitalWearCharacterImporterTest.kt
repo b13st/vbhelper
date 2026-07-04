@@ -90,6 +90,43 @@ class VitalWearCharacterImporterTest {
         assertEquals(true, cardNamesMatch("My DIM: Zero", "my-dim zero"))
     }
 
+    @Test
+    fun toVitalWearSettings_capturesWatchSettingsAndRoundTripStats() {
+        val character = Character.newBuilder()
+            .setSettings(
+                Character.Settings.newBuilder()
+                    .setTrainingInBackground(true)
+                    .setAllowedBattles(Character.Settings.AllowedBattles.ALL_FRANCHISE)
+                    .setAssumedFranchise(2)
+            )
+            .setCharacterStats(
+                Character.CharacterStats.newBuilder()
+                    .setAccumulatedDailyInjuries(1)
+                    .setGeneration(4)
+                    .setTotalTrophies(9)
+            )
+            .build()
+
+        val settings = character.toVitalWearSettings(characterId = 42L)
+
+        assertEquals(42L, settings.characterId)
+        assertEquals(true, settings.trainingInBackground)
+        assertEquals(Character.Settings.AllowedBattles.ALL_FRANCHISE.number, settings.allowedBattles)
+        assertEquals(1, settings.accumulatedDailyInjuries)
+        assertEquals(2, settings.assumedFranchise)
+        assertEquals(4, settings.generation)
+        assertEquals(9, settings.totalTrophies)
+    }
+
+    @Test
+    fun toVitalWearSettings_leavesAssumedFranchiseNullWhenWatchDidNotSendIt() {
+        val settings = Character.newBuilder().build().toVitalWearSettings(characterId = 1L)
+
+        assertEquals(null, settings.assumedFranchise)
+        assertEquals(false, settings.trainingInBackground)
+        assertEquals(Character.Settings.AllowedBattles.CARD_ONLY.number, settings.allowedBattles)
+    }
+
     private fun testCard(id: Long, cardId: Int, name: String): Card {
         return Card(
             id = id,
