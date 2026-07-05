@@ -139,7 +139,8 @@ interface UserCharacterDao {
     @Query("SELECT * FROM BECharacterData WHERE id = :id")
     suspend fun getBeDataOrNull(id: Long): BECharacterData?
 
-    @Query("SELECT * FROM SpecialMissions WHERE characterId = :id")
+    // Ordered so positional slot indexing (0=STEPS, 1=VITALS, 2=BATTLES, 3=WINS) is deterministic.
+    @Query("SELECT * FROM SpecialMissions WHERE characterId = :id ORDER BY id ASC")
     fun getSpecialMissions(id: Long): Flow<List<SpecialMissions>>
 
     @Query(
@@ -258,4 +259,31 @@ interface UserCharacterDao {
         """
     )
     suspend fun getVBDimCharacters(): List<CharacterDtos.CharacterWithSprites>
+
+    @Query(
+        """
+        SELECT
+            uc.*,
+            c.stage,
+            c.attribute,
+            s.spriteIdle1 AS spriteIdle,
+            s.spriteIdle2 AS spriteIdle2,
+            s.width AS spriteWidth,
+            s.height AS spriteHeight,
+            c.nameSprite as nameSprite,
+            c.nameWidth as nameSpriteWidth,
+            c.nameHeight as nameSpriteHeight,
+            d.isBEm as isBemCard,
+            a.characterId = uc.id as isInAdventure,
+            uc.isActive as active
+        FROM UserCharacter uc
+        JOIN CardCharacter c ON uc.charId = c.id
+        JOIN Card d ON  d.id = c.cardId
+        JOIN Sprite s ON s.id = c.spriteId
+        LEFT JOIN Adventure a ON a.characterId = uc.id
+        WHERE uc.characterType = "VBDevice"
+            OR uc.id IN (SELECT characterId FROM SpecialMissions)
+        """
+    )
+    suspend fun getSpecialMissionCapableCharacters(): List<CharacterDtos.CharacterWithSprites>
 }

@@ -17,3 +17,11 @@ app/src/main/assets/battle_sprites
 app/src/main/assets/extracted_audio
 
 API-ACR122USAM-2.01.pdf
+# macOS
+.DS_Store
+
+# Root build output
+/build/
+
+# Local Gradle daemon config
+gradle/gradle-daemon-jvm.properties

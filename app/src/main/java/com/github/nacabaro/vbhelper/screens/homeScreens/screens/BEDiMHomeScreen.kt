@@ -21,6 +21,18 @@ import com.github.nacabaro.vbhelper.domain.device_data.BECharacterData
 import com.github.nacabaro.vbhelper.dtos.CharacterDtos
 import com.github.nacabaro.vbhelper.screens.itemsScreen.ItemsScreenControllerImpl
 import com.github.nacabaro.vbhelper.utils.BitmapData
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.sp
+import com.github.nacabaro.vbhelper.components.SpecialMissionsEntry
+import com.github.nacabaro.vbhelper.domain.device_data.SpecialMissions
+import com.github.nacabaro.vbhelper.dtos.ItemDtos
+import com.github.nacabaro.vbhelper.screens.homeScreens.HomeScreenControllerImpl
+import com.github.nacabaro.vbhelper.screens.homeScreens.dialogs.DeleteSpecialMissionDialog
 import kotlin.text.format
 
 @Composable
@@ -29,8 +41,12 @@ fun BEDiMHomeScreen(
     cardIcon: BitmapData,
     beData: BECharacterData,
     transformationHistory: List<CharacterDtos.TransformationHistory>,
-    contentPadding: PaddingValues
+    contentPadding: PaddingValues,
+    specialMissions: List<SpecialMissions> = emptyList(),
+    homeScreenController: HomeScreenControllerImpl? = null,
+    onClickCollect: (ItemDtos.PurchasedItem?, Int?) -> Unit = { _, _ -> }
 ) {
+    var selectedSpecialMissionId by remember { mutableStateOf<Long>(-1) }
     Column(
         modifier = Modifier
             .padding(top = contentPadding.calculateTopPadding())
@@ -199,5 +215,50 @@ fun BEDiMHomeScreen(
                     .padding(8.dp)
             )
         }
+        if (specialMissions.isNotEmpty() && homeScreenController != null) {
+            Row (
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.home_vbdim_special_missions),
+                    fontSize = 24.sp
+                )
+            }
+            for (mission in specialMissions) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    SpecialMissionsEntry(
+                        specialMission = mission,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        onClickMission = { missionId ->
+                            selectedSpecialMissionId = missionId
+                        },
+                        onClickCollect = { missionId ->
+                            homeScreenController
+                                .clearSpecialMission(missionId, onClickCollect)
+                        }
+                    )
+                }
+            }
+        }
+
+    }
+
+    if (selectedSpecialMissionId.toInt() != -1 && homeScreenController != null) {
+        DeleteSpecialMissionDialog(
+            onClickDismiss = {
+                selectedSpecialMissionId = -1
+            },
+            onClickDelete = {
+                homeScreenController
+                    .clearSpecialMission(selectedSpecialMissionId, onClickCollect)
+                selectedSpecialMissionId = -1
+            }
+        )
     }
 }

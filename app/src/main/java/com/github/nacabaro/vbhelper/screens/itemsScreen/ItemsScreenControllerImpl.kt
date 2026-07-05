@@ -122,8 +122,8 @@ class ItemsScreenControllerImpl (
                         .updateCharacter(characterData)
 
                 } else if (item.itemIcon in ItemTypes.Step8k.id  .. ItemTypes.Win4.id &&
-                    characterData.characterType == DeviceType.VBDevice &&
-                    vbCharacterData != null
+                    ((characterData.characterType == DeviceType.VBDevice && vbCharacterData != null) ||
+                        hasSpecialMissionSlots(characterId))
                 ) {
                     applySpecialMission(item.itemIcon, item.itemLength, characterId)
                 }
@@ -135,6 +135,10 @@ class ItemsScreenControllerImpl (
                 }
             }
         }
+    }
+
+    private suspend fun hasSpecialMissionSlots(characterId: Long): Boolean {
+        return database.userCharacterDao().getSpecialMissions(characterId).first().isNotEmpty()
     }
 
     private suspend fun applySpecialMission(itemIcon: Int, itemLength: Int, characterId: Long) {
@@ -175,10 +179,31 @@ class ItemsScreenControllerImpl (
             else -> 0
         }
 
-        val availableSpecialMissions = database
+        var availableSpecialMissions = database
             .userCharacterDao()
             .getSpecialMissions(characterId)
             .first()
+        if (availableSpecialMissions.size < 4) {
+            // Characters imported before mission support: backfill empty slots on demand.
+            for (missing in availableSpecialMissions.size until 4) {
+                database.userCharacterDao().insertSpecialMissions(
+                    SpecialMissions(
+                        characterId = characterId,
+                        goal = 0,
+                        watchId = 0,
+                        progress = 0,
+                        status = SpecialMission.Status.UNAVAILABLE,
+                        timeElapsedInMinutes = 0,
+                        timeLimitInMinutes = 0,
+                        missionType = SpecialMission.Type.NONE
+                    )
+                )
+            }
+            availableSpecialMissions = database
+                .userCharacterDao()
+                .getSpecialMissions(characterId)
+                .first()
+        }
 
         var newSpecialMission = availableSpecialMissions[specialMissionSlot]
         newSpecialMission = SpecialMissions(

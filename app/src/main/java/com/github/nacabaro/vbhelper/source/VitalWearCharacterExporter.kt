@@ -10,6 +10,7 @@ import com.github.nacabaro.vbhelper.domain.device_data.BECharacterData
 import com.github.nacabaro.vbhelper.domain.device_data.VitalWearCharacterSettings
 import com.github.nacabaro.vbhelper.utils.DeviceType
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
@@ -117,6 +118,7 @@ class VitalWearCharacterExporter(
             )
             .setSettings(buildVitalWearSettingsProto(vwSettings))
             .putMaxAdventureCompletedByCard(card.name, (cardProgress - 1).coerceAtLeast(0))
+            .addAllSpecialMissions(buildSpecialMissionsProto(characterId))
             .addAllTransformationHistory(
                 database.userCharacterDao().getTransformationHistoryForExport(characterId).map {
                     Character.TransformationEvent.newBuilder()
@@ -127,6 +129,30 @@ class VitalWearCharacterExporter(
                 }
             )
             .build()
+    }
+
+    private suspend fun buildSpecialMissionsProto(characterId: Long): List<Character.SpecialMission> {
+        val rows = database.userCharacterDao().getSpecialMissions(characterId).first().take(4)
+        if (rows.isEmpty()) {
+            // Legacy character imported before missions existed: emit nothing.
+            return emptyList()
+        }
+        val missions = rows.map { row ->
+            Character.SpecialMission.newBuilder()
+                .setTypeValue(row.missionType.ordinal)
+                .setStatusValue(row.status.ordinal)
+                .setWatchId(row.watchId)
+                .setGoal(row.goal)
+                .setProgress(row.progress)
+                .setTimeLimitInMinutes(row.timeLimitInMinutes)
+                .setTimeElapsedInMinutes(row.timeElapsedInMinutes)
+                .build()
+        }.toMutableList()
+        // Pad to exactly 4 slots so positional slot indexing survives the round trip.
+        while (missions.size < 4) {
+            missions.add(Character.SpecialMission.getDefaultInstance())
+        }
+        return missions
     }
 
     fun buildShareIntent(characterId: Long): Intent {

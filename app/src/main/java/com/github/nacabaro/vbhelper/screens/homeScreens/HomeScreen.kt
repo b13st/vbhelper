@@ -76,9 +76,10 @@ fun HomeScreen(
             ?: flowOf(emptyList())
     ).collectAsState(initial = emptyList())
 
+    // Collected for every character type: watch-imported (BEDevice) characters
+    // carry mission slots too since the VitalWear transfer support.
     val vbSpecialMissions by (
         activeMon
-            ?.takeIf { it.characterType == DeviceType.VBDevice }
             ?.let { chara ->
                 storageRepository.getSpecialMissions(chara.id)
             }
@@ -152,7 +153,13 @@ fun HomeScreen(
                         beData = beData!!,
                         transformationHistory = transformationHistory,
                         contentPadding = PaddingValues(0.dp),
-                        cardIcon = cardIcon
+                        cardIcon = cardIcon,
+                        specialMissions = vbSpecialMissions,
+                        homeScreenController = homeScreenController,
+                        onClickCollect = { item, currency ->
+                            collectedItem = item
+                            collectedCurrency = currency
+                        }
                     )
                 } else if (!activeMon!!.isBemCard && activeMon!!.characterType == DeviceType.BEDevice && beData != null) {
                     BEDiMHomeScreen(
@@ -160,7 +167,13 @@ fun HomeScreen(
                         beData = beData!!,
                         transformationHistory = transformationHistory,
                         contentPadding = PaddingValues(0.dp),
-                        cardIcon = cardIcon
+                        cardIcon = cardIcon,
+                        specialMissions = vbSpecialMissions,
+                        homeScreenController = homeScreenController,
+                        onClickCollect = { item, currency ->
+                            collectedItem = item
+                            collectedCurrency = currency
+                        }
                     )
                 } else if (vbData != null) {
                     VBDiMHomeScreen(

@@ -56,7 +56,7 @@ fun ChooseCharacterScreen(
                     characterList.value = storageRepository.getVBCharacters()
                 }
                 ItemType.SPECIALMISSION-> {
-                    characterList.value = storageRepository.getVBCharacters()
+                    characterList.value = storageRepository.getSpecialMissionCapableCharacters()
                 }
                 else -> {
                     characterList.value = storageRepository.getAllCharacters().first()

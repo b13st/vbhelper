@@ -55,6 +55,11 @@ class StorageRepository (
         return db.userCharacterDao().getBECharacters()
     }
 
+    // VB bracelets plus any character carrying mission slots (e.g. VitalWear watch imports).
+    suspend fun getSpecialMissionCapableCharacters(): List<CharacterDtos.CharacterWithSprites> {
+        return db.userCharacterDao().getSpecialMissionCapableCharacters()
+    }
+
     suspend fun getVBCharacters(): List<CharacterDtos.CharacterWithSprites> {
         return db.userCharacterDao().getVBDimCharacters()
     }

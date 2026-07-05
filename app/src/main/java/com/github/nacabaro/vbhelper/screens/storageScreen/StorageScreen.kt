@@ -130,12 +130,22 @@ fun StorageScreen(
                         }
                 },
                 onSendToBracelet = {
-                    navController.navigate(
-                        NavigationItems.Scan.route.replace(
-                            "{characterId}",
-                            selectedCharacter.toString()
-                        )
-                    )
+                    // Same path as the home screen's "Send to VitalWear": share the character
+                    // to the watch app, which shows the receive animation. Uses the selected
+                    // character instead of the active one.
+                    try {
+                        val intent = VitalWearCharacterExporter(application, application.container.db)
+                            .buildShareIntent(selectedCharacter!!)
+                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        application.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            application,
+                            "Could not send character to VitalWear: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    selectedCharacter = null
                 },
                 onClickSendToAdventure = { time ->
                     adventureScreenController

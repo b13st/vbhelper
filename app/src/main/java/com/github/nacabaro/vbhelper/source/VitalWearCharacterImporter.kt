@@ -4,7 +4,9 @@ import com.github.cfogrady.vbnfc.data.NfcCharacter
 import com.github.cfogrady.vitalwear.protos.Character
 import com.github.nacabaro.vbhelper.database.AppDatabase
 import com.github.nacabaro.vbhelper.domain.card.Card
+import com.github.cfogrady.vbnfc.vb.SpecialMission
 import com.github.nacabaro.vbhelper.domain.device_data.BECharacterData
+import com.github.nacabaro.vbhelper.domain.device_data.SpecialMissions
 import com.github.nacabaro.vbhelper.domain.device_data.UserCharacter
 import com.github.nacabaro.vbhelper.domain.device_data.VitalWearCharacterSettings
 import com.github.nacabaro.vbhelper.utils.DeviceType
@@ -101,6 +103,25 @@ class VitalWearCharacterImporter(
                 majorVersion = character.characterStats.firmwareMajorVersion
             )
         )
+
+        // Persist the character's 4 mission slots in slot order (0=STEPS, 1=VITALS,
+        // 2=BATTLES, 3=WINS). Old watches send no missions: pad with empty slots so
+        // mission items and the home screen behave exactly like NFC VB scans.
+        for (slot in 0 until 4) {
+            val protoMission = character.specialMissionsList.getOrNull(slot)
+            database.userCharacterDao().insertSpecialMissions(
+                SpecialMissions(
+                    characterId = userCharacterId,
+                    goal = protoMission?.goal?.coerceAtLeast(0) ?: 0,
+                    watchId = protoMission?.watchId?.coerceAtLeast(0) ?: 0,
+                    progress = protoMission?.progress?.coerceAtLeast(0) ?: 0,
+                    status = SpecialMission.Status.entries.getOrElse(protoMission?.statusValue ?: 0) { SpecialMission.Status.UNAVAILABLE },
+                    timeElapsedInMinutes = protoMission?.timeElapsedInMinutes?.coerceAtLeast(0) ?: 0,
+                    timeLimitInMinutes = protoMission?.timeLimitInMinutes?.coerceAtLeast(0) ?: 0,
+                    missionType = SpecialMission.Type.entries.getOrElse(protoMission?.typeValue ?: 0) { SpecialMission.Type.NONE }
+                )
+            )
+        }
 
         val now = System.currentTimeMillis()
         database.dexDao().insertCharacter(slotId, importedCard.id, now)

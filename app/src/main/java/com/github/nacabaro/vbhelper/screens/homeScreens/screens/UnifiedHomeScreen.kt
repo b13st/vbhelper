@@ -182,7 +182,7 @@ fun UnifiedHomeScreen(
                         specialMission = mission,
                         modifier = Modifier.weight(1f).padding(8.dp),
                         onClickMission = { missionId -> selectedSpecialMissionId = missionId },
-                        onClickCollect = { homeScreenController.clearSpecialMission(selectedSpecialMissionId, onClickCollect) }
+                        onClickCollect = { missionId -> homeScreenController.clearSpecialMission(missionId, onClickCollect) }
                     )
                 }
             }
